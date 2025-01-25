@@ -1,7 +1,6 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PartidaController;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/simular-placar', [PartidaController::class, 'simularPlacar']);
+
