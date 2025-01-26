@@ -2,32 +2,24 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Partida extends Model
 {
-    use HasFactory;
+    protected $fillable = ['campeonato_id', 'time_casa_id', 'time_visitante_id', 'gols_casa', 'gols_visitante', 'fase', 'vencedor_id'];
 
-    // Nome da tabela correspondente
-    protected $table = 'tabPartidas';
-
-    // Colunas que podem ser preenchidas diretamente
-    protected $fillable = [
-        'time1_id',
-        'time2_id',
-        'gols_time1',
-        'gols_time2',
-    ];
-
-    // Relacionamento com o Model Time (exemplo)
-    public function time1()
+    public function timeCasa()
     {
-        return $this->belongsTo(Time::class, 'time1_id');
+        return $this->belongsTo(Time::class, 'time_casa_id');
     }
 
-    public function time2()
+    public function timeVisitante()
     {
-        return $this->belongsTo(Time::class, 'time2_id');
+        return $this->belongsTo(Time::class, 'time_visitante_id');
+    }
+
+    public function campeonato()
+    {
+        return $this->belongsTo(Campeonato::class);
     }
 }

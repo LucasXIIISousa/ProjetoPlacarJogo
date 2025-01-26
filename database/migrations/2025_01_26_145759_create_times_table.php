@@ -9,17 +9,12 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+    public function up()
     {
-        Schema::create('tabTimes', function (Blueprint $table) {
+        Schema::create('times', function (Blueprint $table) {
             $table->id();
-            $table->string('nome', 100);
+            $table->string('nome');
             $table->integer('pontuacao')->default(0);
-            $table->integer('vitorias')->default(0);
-            $table->integer('derrotas')->default(0);
-            $table->integer('empates')->default(0);
-            $table->integer('golsMarcados')->default(0);
-            $table->integer('golsSofridos')->default(0);
             $table->timestamps();
         });
     }

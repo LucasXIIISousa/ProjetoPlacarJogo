@@ -2,35 +2,19 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Time extends Model
 {
-    use HasFactory;
+    protected $fillable = ['nome', 'pontuacao'];
 
-    // Definindo a tabela associada ao model
-    protected $table = 'tabTimes';
-
-    // Permitir que as colunas abaixo sejam preenchidas automaticamente
-    protected $fillable = [
-        'nome',
-        'pontuacao',
-        'vitorias',
-        'derrotas',
-        'empates',
-        'golsMarcados',
-        'golsSofridos',
-    ];
-
-    // Relacionamento com os jogos (times podem participar de vários jogos)
-    public function jogosComoTime1()
+    public function partidasComoCasa()
     {
-        return $this->hasMany(Jogo::class, 'time1_id');
+        return $this->hasMany(Partida::class, 'time_casa_id');
     }
 
-    public function jogosComoTime2()
+    public function partidasComoVisitante()
     {
-        return $this->hasMany(Jogo::class, 'time2_id');
+        return $this->hasMany(Partida::class, 'time_visitante_id');
     }
 }
