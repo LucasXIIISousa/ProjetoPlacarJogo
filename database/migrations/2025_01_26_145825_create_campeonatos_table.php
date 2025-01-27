@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('campeonatos', function (Blueprint $table) {
             $table->id();
             $table->string('nome');
+            $table->foreignId('resultado_id')->nullable()->constrained('resultados')->onDelete('set null');
             $table->timestamps();
         });
     }

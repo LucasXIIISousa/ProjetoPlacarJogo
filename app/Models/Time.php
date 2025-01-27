@@ -8,13 +8,13 @@ class Time extends Model
 {
     protected $fillable = ['nome', 'pontuacao'];
 
-    public function partidasComoCasa()
+    public function partidasComoTime1()
     {
-        return $this->hasMany(Partida::class, 'time_casa_id');
+        return $this->hasMany(Partida::class, 'time1_id');
     }
 
-    public function partidasComoVisitante()
+    public function partidasComoTime2()
     {
-        return $this->hasMany(Partida::class, 'time_visitante_id');
+        return $this->hasMany(Partida::class, 'time2_id');
     }
 }

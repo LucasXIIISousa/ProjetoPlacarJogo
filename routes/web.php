@@ -14,10 +14,12 @@ Route::get('/csrf-token', function () {
     return response()->json(['token' => csrf_token()]);
 });
 
+Route::get('/campeonatos/{id}/resultados', [CampeonatoController::class, 'resultados']);
+
 // Rotas para Time
 Route::get('/times', [TimeController::class, 'index']); // Listar todos os times
 Route::post('/times', [TimeController::class, 'store']); // Criar um novo time
-
+Route::delete('/times/{id}', [TimeController::class, 'destroy']);
 Route::get('/test-session', function () {
     session(['test_key' => 'test_value']);
     return session('test_key');
