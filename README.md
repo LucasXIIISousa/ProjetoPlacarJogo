@@ -129,3 +129,31 @@ A requisição `POST /campeonatos/{id}/simular` simula um campeonato com base no
 ## Dockers
 
 foi tentado implementar a subida do dockers que foi criado a imagem e executado mas ele tem algusn problemas de execuçoes que faz ele não achar o **.sqlite** e quando executando o **php artisan serve** ele cria o local mas não e acessivel
+
+### como executar o projeto
+Clone o repositório:
+
+
+git clone https://github.com/LucasXIIISousa/ProjetoPlacarJogo
+
+Instale as dependências do Laravel:
+
+```
+    composer install
+```
+
+Configure o banco de dados SQLite no arquivo .env:
+
+```
+    DB_CONNECTION=sqlite
+    DB_DATABASE=/caminho/para/o/banco/de/dados.sqlite
+```
+Execute as migrações para criar as tabelas no banco de dados:
+
+```
+    php artisan migrate
+```
+Inicie o servidor Laravel:
+```
+    php artisan serve
+```
