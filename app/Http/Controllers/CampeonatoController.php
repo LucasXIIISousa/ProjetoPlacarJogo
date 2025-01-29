@@ -9,6 +9,7 @@ use App\Models\Partida;
 use App\Models\Resultado;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Process\Exception\ProcessFailedException;
+use Illuminate\Support\Facades\Log;
 
 class CampeonatoController extends Controller
 {
@@ -25,32 +26,25 @@ class CampeonatoController extends Controller
         return Campeonato::create($request->all());
     }
 
-    // Simular um campeonato
     public function simular($id)
     {
-        // Encontra o campeonato pelo ID
         $campeonato = Campeonato::find($id);
     
-        // Verifica se o campeonato existe
         if (!$campeonato) {
             return response()->json(['error' => 'Campeonato não encontrado'], 404);
         }
     
-        // Verifica se há exatamente 8 times no campeonato
         $times = Time::all();
         if ($times->count() != 8) {
             return response()->json(['error' => 'O campeonato deve ter exatamente 8 times'], 400);
         }
     
-        // Chaveamento das partidas
         $quartas = $this->chaveamentoQuartas($times);
         $semifinais = $this->chaveamentoSemifinais($quartas);
         $final = $this->chaveamentoFinal($semifinais);
     
-        // Simulação das partidas
-        $resultados = $this->simularPartidas($quartas, $semifinais, $final);
+        $resultados = $this->simularPartidas($quartas, $semifinais, $final, $campeonato);
     
-        // Cria um novo resultado
         $resultado = Resultado::create([
             'campeonato_id' => $campeonato->id,
             'primeiro_lugar_id' => $resultados['vencedor']->id,
@@ -58,12 +52,10 @@ class CampeonatoController extends Controller
             'terceiro_lugar_id' => $resultados['terceiro']->id,
         ]);
     
-        // Atualiza o campeonato com o resultado_id
         $campeonato->update([
             'resultado_id' => $resultado->id,
         ]);
-    
-        // Retorna o resultado da simulação
+
         return response()->json([
             'message' => 'Campeonato simulado com sucesso!',
             'resultado' => $resultados,
@@ -71,22 +63,22 @@ class CampeonatoController extends Controller
         ]);
     }
 
-    // Método para simular placar usando o script Python
     private function simularPlacar()
     {
-        // Caminho completo para o script Python
         $caminhoScript = base_path('resources/python/teste.py');
     
-        // Executa o script Python
         $process = new Process(['py', $caminhoScript]);
         $process->run();
     
         if (!$process->isSuccessful()) {
+            Log::error('Erro ao executar script Python: ' . $process->getErrorOutput());
             throw new ProcessFailedException($process);
         }
     
         $output = $process->getOutput();
         $placar = explode("\n", trim($output));
+    
+        Log::info('Placar simulado: ' . json_encode($placar));
     
         return [
             'gols_time1' => (int)$placar[0],
@@ -94,10 +86,9 @@ class CampeonatoController extends Controller
         ];
     }
 
-    // Método para chaveamento das quartas de final
     private function chaveamentoQuartas($times)
     {
-        $times = $times->shuffle(); // Embaralha os times
+        $times = $times->shuffle();
         $quartas = [];
 
         for ($i = 0; $i < 4; $i++) {
@@ -110,7 +101,6 @@ class CampeonatoController extends Controller
         return $quartas;
     }
 
-    // Método para chaveamento das semifinais
     private function chaveamentoSemifinais($quartas)
     {
         $vencedores = [];
@@ -133,7 +123,6 @@ class CampeonatoController extends Controller
         ];
     }
 
-    // Método para chaveamento da final e disputa do 3º lugar
     private function chaveamentoFinal($semifinais)
     {
         $finalistas = [];
@@ -158,43 +147,82 @@ class CampeonatoController extends Controller
         ];
     }
 
-    // Método para calcular o vencedor de uma partida
     private function calcularVencedor($time1, $time2, $placar)
     {
         $time1->pontuacao += $placar['gols_time1'] - $placar['gols_time2'];
         $time2->pontuacao += $placar['gols_time2'] - $placar['gols_time1'];
-
+    
         $time1->save();
         $time2->save();
-
+    
         if ($placar['gols_time1'] > $placar['gols_time2']) {
             return $time1;
         } elseif ($placar['gols_time1'] < $placar['gols_time2']) {
             return $time2;
         } else {
-            // Empate: desempate por pontuação
-            if ($time1->pontuacao > $time2->pontuacao) {
-                return $time1;
-            } elseif ($time1->pontuacao < $time2->pontuacao) {
-                return $time2;
-            } else {
-                // Empate na pontuação: desempate por ordem de inscrição
-                return $time1->created_at < $time2->created_at ? $time1 : $time2;
-            }
+            return $this->simularPenaltis($time1, $time2);
         }
     }
 
-    // Método para simular todas as partidas
-    private function simularPartidas($quartas, $semifinais, $final)
+    private function simularPartidas($quartas, $semifinais, $final, $campeonato)
     {
-        // Simula a final
+        foreach ($quartas as $partida) {
+            $placar = $this->simularPlacar();
+            $vencedor = $this->calcularVencedor($partida['time1'], $partida['time2'], $placar);
+
+            Partida::create([
+                'campeonato_id' => $campeonato->id,
+                'time1_id' => $partida['time1']->id,
+                'time2_id' => $partida['time2']->id,
+                'gols_time1' => $placar['gols_time1'],
+                'gols_time2' => $placar['gols_time2'],
+                'fase' => 'quartas',
+                'vencedor_id' => $vencedor->id,
+                'houve_penaltis' => $placar['gols_time1'] == $placar['gols_time2'],
+            ]);
+        }
+
+        foreach ($semifinais as $partida) {
+            $placar = $this->simularPlacar();
+            $vencedor = $this->calcularVencedor($partida['time1'], $partida['time2'], $placar);
+
+            Partida::create([
+                'campeonato_id' => $campeonato->id,
+                'time1_id' => $partida['time1']->id,
+                'time2_id' => $partida['time2']->id,
+                'gols_time1' => $placar['gols_time1'],
+                'gols_time2' => $placar['gols_time2'],
+                'fase' => 'semifinais',
+                'vencedor_id' => $vencedor->id,
+            ]);
+        }
+
         $placarFinal = $this->simularPlacar();
         $vencedorFinal = $this->calcularVencedor($final['final']['time1'], $final['final']['time2'], $placarFinal);
         $segundoLugar = $final['final']['time1']->id == $vencedorFinal->id ? $final['final']['time2'] : $final['final']['time1'];
 
-        // Simula a disputa do 3º lugar
+        Partida::create([
+            'campeonato_id' => $campeonato->id,
+            'time1_id' => $final['final']['time1']->id,
+            'time2_id' => $final['final']['time2']->id,
+            'gols_time1' => $placarFinal['gols_time1'],
+            'gols_time2' => $placarFinal['gols_time2'],
+            'fase' => 'final',
+            'vencedor_id' => $vencedorFinal->id,
+        ]);
+
         $placarTerceiro = $this->simularPlacar();
         $terceiroLugar = $this->calcularVencedor($final['terceiroLugar']['time1'], $final['terceiroLugar']['time2'], $placarTerceiro);
+
+        Partida::create([
+            'campeonato_id' => $campeonato->id,
+            'time1_id' => $final['terceiroLugar']['time1']->id,
+            'time2_id' => $final['terceiroLugar']['time2']->id,
+            'gols_time1' => $placarTerceiro['gols_time1'],
+            'gols_time2' => $placarTerceiro['gols_time2'],
+            'fase' => 'disputa_terceiro',
+            'vencedor_id' => $terceiroLugar->id,
+        ]);
 
         return [
             'vencedor' => $vencedorFinal,
@@ -205,15 +233,12 @@ class CampeonatoController extends Controller
 
     public function resultados($id)
     {
-        // Encontra o campeonato pelo ID com os relacionamentos
         $campeonato = Campeonato::with(['resultado.primeiroLugar', 'resultado.segundoLugar', 'resultado.terceiroLugar'])->find($id);
     
-        // Verifica se o campeonato existe
         if (!$campeonato) {
             return response()->json(['error' => 'Campeonato não encontrado'], 404);
         }
     
-        // Verifica se o resultado existe
         if (!$campeonato->resultado) {
             return response()->json([
                 'campeonato' => [
@@ -222,12 +247,11 @@ class CampeonatoController extends Controller
                     'resultado_id' => $campeonato->resultado_id,
                     'created_at' => $campeonato->created_at,
                     'updated_at' => $campeonato->updated_at,
-                    'resultado' => null, // Resultado não existe
+                    'resultado' => null, 
                 ],
             ]);
         }
     
-        // Formata a resposta para incluir apenas os times
         return response()->json([
             'campeonato' => [
                 'id' => $campeonato->id,
@@ -242,5 +266,82 @@ class CampeonatoController extends Controller
                 ],
             ],
         ]);
+    }
+
+    private function simularPenaltis($time1, $time2)
+    {
+        $penaltisTime1 = 0;
+        $penaltisTime2 = 0;
+
+        for ($i = 0; $i < 5; $i++) {
+            $penaltisTime1 += rand(0, 1);
+            $penaltisTime2 += rand(0, 1);
+        }
+
+        while ($penaltisTime1 == $penaltisTime2) {
+            $penaltisTime1 += rand(0, 1);
+            $penaltisTime2 += rand(0, 1);
+        }
+
+        return $penaltisTime1 > $penaltisTime2 ? $time1 : $time2;
+    }
+
+    public function destroy($id)
+    {
+
+        $campeonato = Campeonato::find($id);
+
+        if (!$campeonato) {
+            return response()->json(['error' => 'campeonato não encontrado'], 404);
+        }
+
+        $campeonato->delete();
+
+        return response()->json(['message' => 'campeonato deletado com sucesso!'], 200);
+    }
+
+    public function atualizar(Request $request, $id)
+    {
+        $request->validate([
+            'nome' => 'required|string',
+            'data_inicio' => 'required|date',
+            'data_fim' => 'required|date',
+        ]);
+
+        $campeonato = Campeonato::findOrFail($id);
+
+        $campeonato->nome = $request->nome;
+        $campeonato->data_inicio = $request->data_inicio;
+        $campeonato->data_fim = $request->data_fim;
+        $campeonato->save();
+
+        return response()->json($campeonato, 200);
+    }
+
+    public function atualizarParcial(Request $request, $id)
+    {
+        $request->validate([
+            'nome' => 'string', 
+            'data_inicio' => 'date',
+            'data_fim' => 'date',
+        ]);
+
+        $campeonato = Campeonato::findOrFail($id);
+
+        if ($request->has('nome')) {
+            $campeonato->nome = $request->nome;
+        }
+
+        if ($request->has('data_inicio')) {
+            $campeonato->data_inicio = $request->data_inicio;
+        }
+
+        if ($request->has('data_fim')) {
+            $campeonato->data_fim = $request->data_fim;
+        }
+
+        $campeonato->save();
+
+        return response()->json($campeonato, 200);
     }
 }

@@ -1,0 +1,34 @@
+services:
+  laravel:
+    build:
+      context: ./docker/php   # Aponta para o diretório onde está o Dockerfile
+      dockerfile: Dockerfile  # Nome do Dockerfile na pasta
+    container_name: laravel_app
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - APP_KEY=base64:placeholder
+    depends_on:
+      - sqlite
+    networks:
+      - laravel_network
+
+  sqlite:
+    image: nouchka/sqlite3
+    container_name: sqlite_db
+    volumes:
+      - sqlite_data:/data
+    networks:
+      - laravel_network
+
+networks:
+  laravel_network:
+    driver: bridge
+
+volumes:
+  - .:/var/www/html
+  - ./database/database.sqlite:/var/www/html/database/database.sqlite
