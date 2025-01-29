@@ -110,7 +110,7 @@ A requisição `POST /campeonatos/{id}/simular` simula um campeonato com base no
 
 ![Requisição de Simulação](./imgs/750b226e-5fd5-4592-bcfe-d0319c393232.jpg)
 
-## alguns prints a masi dos testes
+## alguns prints a mais dos testes
 
 ### path times
 ![path times](./imgs/50f783cc-1a3f-4e4c-a859-7cddd8c6025b.jpg)
