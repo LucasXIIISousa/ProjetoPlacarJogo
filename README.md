@@ -108,12 +108,12 @@ A requisição `POST /campeonatos` cria um novo campeonato. O corpo da requisiç
 
 A requisição `POST /campeonatos/{id}/simular` simula um campeonato com base no ID fornecido. O resultado da simulação é retornado na resposta.
 
-![Requisição de Simulação](./imgs/750b226e-5fd5-4592-bcfe-d0319c393232.jpg)
+![Requisição de Simulação](./imgs/ef7cf0bd-719c-4323-bf71-9a59d9252123.jpg)
 
 ## alguns prints a masi dos testes
 
 ### path times
-![path times](./imgs/50f783cc-1a3f-4e4c-a859-7cddd8c6025b.jpg)
+![path times](./imgs/750b226e-5fd5-4592-bcfe-d0319c393232.jpg)
 
 ### put times
 ![put times](./imgs/50f783cc-1a3f-4e4c-a859-7cddd8c6025b.jpg)
@@ -121,3 +121,11 @@ A requisição `POST /campeonatos/{id}/simular` simula um campeonato com base no
 
 ### teste executados
 ![CMD dos teste](./imgs/1bf8c604-4046-4121-9db5-490e12b546e7.jpg)
+
+
+## documentação (collection) do Insomnia
+[documentação (collection) do Insomnia](./Insomnia_2025-01-28.json)
+
+## Dockers
+
+foi tentado implementar a subida do dockers que foi criado a imagem e executado mas ele tem algusn problemas de execuçoes que faz ele não achar o **.sqlite** e quando executando o **php artisan serve** ele cria o local mas não e acessivel
